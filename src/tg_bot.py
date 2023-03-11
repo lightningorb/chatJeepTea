@@ -45,7 +45,7 @@ async def HN(update: Update, context: ContextTypes.DEFAULT_TYPE):
     response = requests.get(
         f"https://hacker-news.firebaseio.com/v0/topstories.json?print=pretty"
     )
-    article_id = response.json()[randrange(0, 20)]
+    article_id = response.json()[randrange(0, 100)]
     article_api_link = (
         f"https://hacker-news.firebaseio.com/v0/item/{article_id}.json?print=pretty"
     )
@@ -86,7 +86,7 @@ async def intro(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await typing()
 
-    msg = "Hello and welcome to Chat Jeep Tea. To speak to me, record and send a voice message by doing a long press on the microphone icon at the bottom right of telegram. I will respond to your message. To bring up the help menu at any time, type /help. Please bear in mind I keep a certain (somewhat small) amount of the conversation history as context. This helps us have a more natural conversation. If you want to start a new conversation simply press the 'new conversation' button in the help menu. However this is usually not required as i deal well with context switching. Go ahead, ask me anything."
+    msg = "Hello and welcome to Chat Jeep Tea. To speak to me, record and send a voice message by doing a long press on the microphone icon at the bottom right of telegram. I will respond to your message. To bring up the help menu at any time, type /help. Please bear in mind I keep a certain (somewhat small) amount of the conversation history as context. This helps us have a more natural conversation. If you want to start a new conversation simply press the 'new conversation' button in the help menu. The HN button summarizes a hackernews article at random. This feature is still in beta. Go ahead, ask me anything."
 
     await context.bot.send_message(
         chat_id=update.effective_chat.id, text=f"assistant: {msg}"
@@ -143,11 +143,12 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
 
     await typing()
+    if user.id not in convos:
+        convos[user.id] = Conversation(user.id)
+
+    convo = convos[user.id]
 
     if voice:
-        if user.id not in convos:
-            convos[user.id] = Conversation(user.id)
-        convo = convos[user.id]
         file_name = f"/tmp/{voice.file_id}.ogg"
         file_info = await context.bot.get_file(voice.file_id)
         file_path = file_info.file_path
@@ -163,14 +164,14 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         t = whisper(temp_file_name)
         convo.add_entry(t, Speaker.user)
         await update.message.reply_text(f"user: {t}")
-        await typing()
-        think(convo)
-        await update.message.reply_text(f"assistant: {convo.last_entry()}")
-        await typing()
-        fn = speak(convo.last_entry(), use_google=True, save_only=True)
-        await context.bot.send_voice(chat_id=update.effective_chat.id, voice=fn)
     else:
-        await update.message.reply_text(rf"Hi {user.mention_html()}!")
+        convo.add_entry(update.message.text, Speaker.user)
+    await typing()
+    think(convo)
+    await update.message.reply_text(f"assistant: {convo.last_entry()}")
+    await typing()
+    fn = speak(convo.last_entry(), use_google=True, save_only=True)
+    await context.bot.send_voice(chat_id=update.effective_chat.id, voice=fn)
 
 
 def main() -> None:

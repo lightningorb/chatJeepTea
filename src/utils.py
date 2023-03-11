@@ -1,3 +1,4 @@
+import tiktoken
 import tempfile
 import json
 import re
@@ -9,6 +10,12 @@ import keys
 import sys
 
 keys.set_up_keys()
+enc = tiktoken.get_encoding("gpt2")
+
+# Todo this token math is really not great
+model_max_tokens = 4097
+response_max_tokens = 1000
+prompt_max_tokens = model_max_tokens - response_max_tokens
 
 
 class Speaker:
@@ -19,15 +26,16 @@ class Speaker:
 
 class Entry:
     def __init__(self, text, role):
-        self.text = text
+        self.tokens = enc.encode(text)[:prompt_max_tokens]
         self.role = role
 
     @property
+    def text(self):
+        return enc.decode(self.tokens)
+
+    @property
     def num_tokens(self):
-        tokens = re.findall(
-            r'([^\s"{},:\[\]]*[^\s"{},:]*[^\s"{},:\[\]]*|["{\},:\[\]])', self.text
-        )
-        return len(tokens)
+        return len(self.tokens)
 
 
 class Conversation:
@@ -72,11 +80,12 @@ class Conversation:
             del self.context[first_index]
 
     def remove_in_excess(self, count):
-        while self.num_tokens > 1000:
+        while self.num_tokens > count:
             self.remove_first_entry()
 
 
 def think(convo):
+    convo.remove_in_excess(prompt_max_tokens)
     convo.save()
     print("Getting completion")
     prompt = convo.as_prompt()
@@ -84,13 +93,11 @@ def think(convo):
     print(prompt)
     print("=========")
 
-    convo.remove_in_excess(1000)
-
     while True:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=prompt,
-            max_tokens=1000,
+            max_tokens=response_max_tokens,
             n=1,
             stop=None,
             temperature=1,
@@ -137,21 +144,3 @@ def speak(text, use_google=False, save_only=False):
         return temp_file_name
     else:
         subprocess.run(["say", text])
-
-
-if __name__ == "__main__":
-    prompt = """
-Great job on completing the warm-up! Here's the next step:
-Step 2: Squats - Stand with your feet shoulder-width apart and toes pointed slightly outwards. Slowly bend your knees and lower your hips towards the ground, keeping your chest up and your weight on your heels. Once your thighs are parallel to the ground, push through your heels and return to a standing position. Repeat for 10-12 reps.
-Next!
-"""
-
-    response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=prompt,
-        max_tokens=3000,
-        n=1,
-        stop="±",
-        temperature=1,
-    )
-    print(response.choices)
