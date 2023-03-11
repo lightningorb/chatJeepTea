@@ -1,0 +1,10 @@
+.venv
+.envrc
+*.ogg
+*.sublime-project
+*.sublime-workspace
+tmp.py
+*.json
+*.wav
+*.mp3
+__pycache__
