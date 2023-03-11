@@ -104,21 +104,15 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         t = whisper(temp_file_name)
         convo.add_entry(t, Speaker.user)
-        await update.message.reply_html(
-            f"user: {t}", reply_markup=ForceReply(selective=True)
-        )
+        await update.message.reply_text(f"user: {t}")
         await typing()
         think(convo)
-        await update.message.reply_html(
-            f"assistant: {convo.last_entry()}", reply_markup=ForceReply(selective=True)
-        )
+        await update.message.reply_text(f"assistant: {convo.last_entry()}")
         await typing()
         fn = speak(convo.last_entry(), use_google=True, save_only=True)
         await context.bot.send_voice(chat_id=update.effective_chat.id, voice=fn)
     else:
-        await update.message.reply_html(
-            rf"Hi {user.mention_html()}!", reply_markup=ForceReply(selective=True)
-        )
+        await update.message.reply_text(rf"Hi {user.mention_html()}!")
 
 
 def main() -> None:
