@@ -31,15 +31,20 @@ class Entry:
 
 
 class Conversation:
-    def __init__(self, convo_id):
+    def __init__(self, convo_id, load_cache=True):
         self.convo_id = convo_id
         self.context = []
-        if os.path.exists(f"/tmp/conversation_{convo_id}.json"):
-            with open(f"/tmp/conversation_{convo_id}.json", "r") as f:
-                self.context = [
-                    Entry(x["content"], x["role"]) for x in json.loads(f.read())
-                ]
-                print(self.as_prompt())
+        if load_cache:
+            if os.path.exists(f"/tmp/conversation_{convo_id}.json"):
+                with open(f"/tmp/conversation_{convo_id}.json", "r") as f:
+                    self.context = [
+                        Entry(x["content"], x["role"]) for x in json.loads(f.read())
+                    ]
+
+    def delete_cache(self):
+        self.context = []
+        if os.path.exists(f"/tmp/conversation_{self.convo_id}.json"):
+            os.unlink(f"/tmp/conversation_{self.convo_id}.json")
 
     def save(self):
         with open(f"/tmp/conversation_{self.convo_id}.json", "w") as w:
