@@ -3,6 +3,7 @@ import tempfile
 import os
 import requests
 from telegram import __version__ as TG_VER, ForceReply, Update
+from telegram.constants import ChatAction
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -10,6 +11,8 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
+
+from textwrap import dedent
 
 import sys
 from utils import think, speak, Entry, Speaker, Conversation
@@ -35,6 +38,14 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     voice = update.message.voice
+
+    async def typing():
+        await context.bot.send_chat_action(
+            chat_id=update.effective_chat.id, action=ChatAction.TYPING
+        )
+
+    await typing()
+
     if voice:
         if user.id not in convos:
             convos[user.id] = Conversation(user.id)
@@ -53,11 +64,16 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         )
         t = whisper(temp_file_name)
         convo.add_entry(t, Speaker.user)
-        think(convo)
-        fn = speak(convo.last_entry(), use_google=True, save_only=True)
         await update.message.reply_html(
-            convo.last_entry(), reply_markup=ForceReply(selective=True)
+            f"user: {t}", reply_markup=ForceReply(selective=True)
         )
+        await typing()
+        think(convo)
+        await update.message.reply_html(
+            f"assistant: {convo.last_entry()}", reply_markup=ForceReply(selective=True)
+        )
+        await typing()
+        fn = speak(convo.last_entry(), use_google=True, save_only=True)
         await context.bot.send_voice(chat_id=update.effective_chat.id, voice=fn)
     else:
         await update.message.reply_html(
@@ -66,16 +82,6 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 def main() -> None:
-    application = Application.builder().token(os.environ["TOKEN"]).build()
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(
-        MessageHandler((filters.TEXT | filters.ATTACHMENT) & ~filters.COMMAND, echo)
-    )
-    application.run_polling()
-
-
-if __name__ == "__main__":
     TG_VER_INFO = (0, 0, 0, 0, 0)
     try:
         from telegram import __version_info__
@@ -87,4 +93,10 @@ if __name__ == "__main__":
         raise RuntimeError(
             f"This example is not compatible with your current PTB version {TG_VER}."
         )
-    main()
+    application = Application.builder().token(os.environ["TOKEN"]).build()
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("help", help_command))
+    application.add_handler(
+        MessageHandler((filters.TEXT | filters.ATTACHMENT) & ~filters.COMMAND, echo)
+    )
+    application.run_polling()
