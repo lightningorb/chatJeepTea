@@ -12,9 +12,11 @@ To use ChatJeepTea, you will need to set the following environment variables:
 ### Installation
 
 1. Clone this repository
-2. Install dependencies with `pip install -r requirements.txt`
-3. Set environment variables
-4. Run `python tg_bot.py`
+1. `python3 -m venv .venv`
+1. `. .venv/bin/activate`
+1. Install dependencies with `pip3 install -r src/requirements.txt`
+1. Set environment variables (or even better, use direnv)
+1. Run `python3 tg_bot.py`
 
 ### Usage
 
@@ -24,7 +26,7 @@ Note: group chats are not currently supported.
 
 ## Contributing
 
-We welcome contributions to ChatJeepTea! To get started, simply fork this repository and submit a pull request with your changes.
+We welcome contributions to ChatJeepTea! To get started, simply fork this repository and submit a pull request with your changes. Please commit often. 
 
 ## License
 
