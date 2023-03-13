@@ -1,10 +1,10 @@
-import keys
-import tempfile
 import os
+import tempfile
+
+import conf
 import requests
-from telegram import __version__ as TG_VER, ForceReply, Update
-from telegram.ext import CommandHandler, CallbackQueryHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import __version__ as TG_VER, Update
 from telegram.constants import ChatAction
 from telegram.ext import (
     Application,
@@ -13,11 +13,11 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
+from telegram.ext import CallbackQueryHandler
 
-from textwrap import dedent
-
-from utils import think, speak, Entry, Speaker, Conversation
-from record import record
+import keys
+from utils import think, Speaker, Conversation
+from speak import speak
 from whisper import whisper
 
 keys.set_up_keys()
@@ -25,60 +25,7 @@ keys.set_up_keys()
 convos = {}
 
 
-async def HN(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    from random import randrange
-    import requests
-    from readabilipy import simple_json_from_html_string
-
-    user = update.effective_user
-
-    if user.id not in convos:
-        convos[user.id] = Conversation(user.id)
-
-    convo = convos[user.id]
-    convo.delete_cache()
-
-    await context.bot.send_chat_action(
-        chat_id=update.effective_chat.id, action=ChatAction.TYPING
-    )
-
-    response = requests.get(
-        f"https://hacker-news.firebaseio.com/v0/topstories.json?print=pretty"
-    )
-    article_id = response.json()[randrange(0, 100)]
-    article_api_link = (
-        f"https://hacker-news.firebaseio.com/v0/item/{article_id}.json?print=pretty"
-    )
-    response = requests.get(article_api_link)
-
-    article_html = requests.get(response.json()["url"], timeout=10).text
-    article = simple_json_from_html_string(article_html, use_readability=True)
-    plain_text = " ".join(x["text"] for x in article["plain_text"])
-
-    await context.bot.send_chat_action(
-        chat_id=update.effective_chat.id, action=ChatAction.TYPING
-    )
-    # await context.bot.send_message(
-    #     chat_id=update.effective_chat.id, text=f"assistant: {plain_text}"
-    # )
-    await context.bot.send_chat_action(
-        chat_id=update.effective_chat.id, action=ChatAction.TYPING
-    )
-    convo.add_entry(f"summarize the following:\n\n{plain_text}", Speaker.user)
-    think(convo)
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id, text=convo.last_entry()
-    )
-    await context.bot.send_chat_action(
-        chat_id=update.effective_chat.id, action=ChatAction.TYPING
-    )
-    fn = speak(convo.last_entry(), use_google=True, save_only=True)
-    await context.bot.send_voice(chat_id=update.effective_chat.id, voice=fn)
-
-
 async def intro(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user = update.effective_user
-
     async def typing():
         await context.bot.send_chat_action(
             chat_id=update.effective_chat.id, action=ChatAction.TYPING
@@ -86,7 +33,7 @@ async def intro(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await typing()
 
-    msg = "Hello and welcome to Chat Jeep Tea. To speak to me, record and send a voice message by doing a long press on the microphone icon at the bottom right of telegram. I will respond to your message. To bring up the help menu at any time, type /help. Please bear in mind I keep a certain (somewhat small) amount of the conversation history as context. This helps us have a more natural conversation. If you want to start a new conversation simply press the 'new conversation' button in the help menu. The HN button summarizes a hackernews article at random. This feature is still in beta. Go ahead, ask me anything."
+    msg = "Hello and welcome to Chat Jeep Tea. To speak to me, record and send a voice message by doing a long press on the microphone icon at the bottom right of telegram. I will respond to your message. To bring up the help menu at any time, type /help. Please bear in mind I keep a certain (somewhat small) amount of the conversation history as context. This helps us have a more natural conversation. Go ahead, ask me anything."
 
     await context.bot.send_message(
         chat_id=update.effective_chat.id, text=f"assistant: {msg}"
@@ -127,10 +74,181 @@ def main_menu_keyboard():
         [
             InlineKeyboardButton("New Conversation", callback_data="new_conversation"),
             InlineKeyboardButton("What is this?", callback_data="intro"),
-            InlineKeyboardButton("HN", callback_data="HN"),
+            InlineKeyboardButton("Set Language", callback_data="lang_menu"),
         ]
     ]
     return InlineKeyboardMarkup(keyboard)
+
+
+async def set_lang(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    user = update.effective_user
+    match = context.match.string[len('lang: '):]
+    conf.set_language(user.id, match)
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id, text=f"Language: {match} set."
+    )
+
+
+async def lang_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="Languages",
+        reply_markup=InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        "Afrikaans (South Africa)", callback_data="lang: af-ZA"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "Arabic (Saudi Arabia)", callback_data="lang: ar-XA"
+                    )
+                ],
+                [InlineKeyboardButton("Bengali (India)", callback_data="lang: bn-IN")],
+                [
+                    InlineKeyboardButton(
+                        "Bulgarian (Bulgaria)", callback_data="lang: bg-BG"
+                    )
+                ],
+                [InlineKeyboardButton("Catalan (Spain)", callback_data="lang: ca-ES")],
+                [
+                    InlineKeyboardButton(
+                        "Chinese (Mandarin, China)", callback_data="lang: cmn-CN"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "Chinese (Mandarin, Taiwan)", callback_data="lang: cmn-TW"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "Czech (Czech Republic)", callback_data="lang: cs-CZ"
+                    )
+                ],
+                [InlineKeyboardButton("Danish (Denmark)", callback_data="lang: da-DK")],
+                [InlineKeyboardButton("Dutch (Belgium)", callback_data="lang: nl-BE")],
+                [
+                    InlineKeyboardButton(
+                        "Dutch (Netherlands)", callback_data="lang: nl-NL"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "English (Australia)", callback_data="lang: en-AU"
+                    )
+                ],
+                [InlineKeyboardButton("English (India)", callback_data="lang: en-IN")],
+                [
+                    InlineKeyboardButton(
+                        "English (United Kingdom)", callback_data="lang: en-GB"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "English (United States)", callback_data="lang: en-US"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "Filipino (Philippines)", callback_data="lang: fil-PH"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "Finnish (Finland)", callback_data="lang: fi-FI"
+                    )
+                ],
+                [InlineKeyboardButton("French (Canada)", callback_data="lang: fr-CA")],
+                [InlineKeyboardButton("French (France)", callback_data="lang: fr-FR")],
+                [InlineKeyboardButton("Greek (Greece)", callback_data="lang: el-GR")],
+                [InlineKeyboardButton("Gujarati (India)", callback_data="lang: gu-IN")],
+                [InlineKeyboardButton("Hebrew (Israel)", callback_data="lang: he-IL")],
+                [InlineKeyboardButton("Hindi (India)", callback_data="lang: hi-IN")],
+                [
+                    InlineKeyboardButton(
+                        "Hungarian (Hungary)", callback_data="lang: hu-HU"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "Icelandic (Iceland)", callback_data="lang: is-IS"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "Indonesian (Indonesia)", callback_data="lang: id-ID"
+                    )
+                ],
+                [InlineKeyboardButton("Italian (Italy)", callback_data="lang: it-IT")],
+                [InlineKeyboardButton("Japanese (Japan)", callback_data="lang: ja-JP")],
+                [InlineKeyboardButton("Kannada (India)", callback_data="lang: kn-IN")],
+                [
+                    InlineKeyboardButton(
+                        "Korean (South Korea)", callback_data="lang: ko-KR"
+                    )
+                ],
+                [InlineKeyboardButton("Latvian (Latvia)", callback_data="lang: lv-LV")],
+                [
+                    InlineKeyboardButton(
+                        "Lithuanian (Lithuania)", callback_data="lang: lt-LT"
+                    )
+                ],
+                [InlineKeyboardButton("Malay (Malaysia)", callback_data="lang: ms-MY")],
+                [
+                    InlineKeyboardButton(
+                        "Malayalam (India)", callback_data="lang: ml-IN"
+                    )
+                ],
+                [InlineKeyboardButton("Marathi (India)", callback_data="lang: mr-IN")],
+                [
+                    InlineKeyboardButton(
+                        "Norwegian Bokmål (Norway)", callback_data="lang: nb-NO"
+                    )
+                ],
+                [InlineKeyboardButton("Polish (Poland)", callback_data="lang: pl-PL")],
+                [
+                    InlineKeyboardButton(
+                        "Portuguese (Brazil)", callback_data="lang: pt-BR"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "Portuguese (Portugal)", callback_data="lang: pt-PT"
+                    )
+                ],
+                [InlineKeyboardButton("Punjabi (India)", callback_data="lang: pa-IN")],
+                [
+                    InlineKeyboardButton(
+                        "Romanian (Romania)", callback_data="lang: ro-RO"
+                    )
+                ],
+                [InlineKeyboardButton("Serbian (Serbia)", callback_data="lang: sr-RS")],
+                [InlineKeyboardButton("Spanish (Spain)", callback_data="lang: es-ES")],
+                [
+                    InlineKeyboardButton(
+                        "Spanish (United States)", callback_data="lang: es-US"
+                    )
+                ],
+                [InlineKeyboardButton("Swedish (Sweden)", callback_data="lang: sv-SE")],
+                [InlineKeyboardButton("Tamil (India)", callback_data="lang: ta-IN")],
+                [InlineKeyboardButton("Telugu (India)", callback_data="lang: te-IN")],
+                [InlineKeyboardButton("Thai (Thailand)", callback_data="lang: th-TH")],
+                [InlineKeyboardButton("Turkish (Turkey)", callback_data="lang: tr-TR")],
+                [
+                    InlineKeyboardButton(
+                        "Ukrainian (Ukraine)", callback_data="lang: uk-UA"
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        "Vietnamese (Vietnam)", callback_data="lang: vi-VN"
+                    )
+                ],
+            ]
+        ),
+    )
 
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -170,7 +288,9 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     think(convo)
     await update.message.reply_text(f"assistant: {convo.last_entry()}")
     await typing()
-    fn = speak(convo.last_entry(), use_google=True, save_only=True)
+    fn = speak(
+        text=convo.last_entry(), user_id=user.id, use_google=True, save_only=True
+    )
     await context.bot.send_voice(chat_id=update.effective_chat.id, voice=fn)
 
 
@@ -187,12 +307,12 @@ def main() -> None:
             f"This example is not compatible with your current PTB version {TG_VER}."
         )
     application = Application.builder().token(os.environ["TOKEN"]).build()
-    # application.add_handler(CallbackQueryHandler(main_menu, pattern="main"))
     application.add_handler(
         CallbackQueryHandler(new_conversation, pattern="new_conversation")
     )
     application.add_handler(CallbackQueryHandler(intro, pattern="intro"))
-    application.add_handler(CallbackQueryHandler(HN, pattern="HN"))
+    application.add_handler(CallbackQueryHandler(lang_menu, pattern="lang_menu"))
+    application.add_handler(CallbackQueryHandler(set_lang, pattern="lang: (.*)"))
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(

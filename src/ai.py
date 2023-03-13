@@ -1,5 +1,6 @@
 import sys
-from utils import think, speak, Entry, Speaker, Conversation
+from utils import think, Entry, Speaker, Conversation
+from speak import speak
 from record import record
 from whisper import whisper
 
