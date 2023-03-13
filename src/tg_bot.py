@@ -82,7 +82,7 @@ def main_menu_keyboard():
 
 async def set_lang(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
-    match = context.match.string[len('lang: '):]
+    match = context.match.string[len("lang: ") :]
     conf.set_language(user.id, match)
     await context.bot.send_message(
         chat_id=update.effective_chat.id, text=f"Language: {match} set."
@@ -224,6 +224,7 @@ async def lang_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                         "Romanian (Romania)", callback_data="lang: ro-RO"
                     )
                 ],
+                [InlineKeyboardButton("Russian", callback_data="lang: ru-RU")],
                 [InlineKeyboardButton("Serbian (Serbia)", callback_data="lang: sr-RS")],
                 [InlineKeyboardButton("Spanish (Spain)", callback_data="lang: es-ES")],
                 [
