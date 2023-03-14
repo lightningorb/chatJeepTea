@@ -22,7 +22,7 @@ class Speaker:
 
 
 class Entry:
-    def __init__(self, text, role):
+    def __init__(self, text, role=Speaker.user):
         self.tokens = enc.encode(text)[:prompt_max_tokens]
         self.role = role
 
@@ -45,6 +45,9 @@ class Conversation:
                     self.context = [
                         Entry(x["content"], x["role"]) for x in json.loads(f.read())
                     ]
+
+    def replace_last_entry_with_text(self, entry):
+        self.context[-1] = entry
 
     def delete_cache(self):
         self.context = []
@@ -112,5 +115,3 @@ def think(convo):
                 pass
             else:
                 break
-
-

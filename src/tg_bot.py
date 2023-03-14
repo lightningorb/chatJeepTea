@@ -16,6 +16,7 @@ from telegram.ext import (
 from telegram.ext import CallbackQueryHandler
 
 import keys
+from intl import longform_info_text
 from utils import think, Speaker, Conversation
 from speak import speak
 from whisper import whisper
@@ -69,15 +70,36 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     await update.message.reply_text("Help menu:", reply_markup=main_menu_keyboard())
 
 
+async def longform_info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    print("longform_info")
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id, text=longform_info_text
+    )
+
+
+async def longform(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    print("longform")
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text="Please provide the title of the book / podcast / longform article you want to generate",
+    )
+
+
 def main_menu_keyboard():
-    keyboard = [
+    return InlineKeyboardMarkup(
         [
-            InlineKeyboardButton("New Conversation", callback_data="new_conversation"),
-            InlineKeyboardButton("What is this?", callback_data="intro"),
-            InlineKeyboardButton("Set Language", callback_data="lang_menu"),
+            [
+                InlineKeyboardButton(
+                    "New Conversation", callback_data="new_conversation"
+                ),
+                InlineKeyboardButton("What is this?", callback_data="intro"),
+                InlineKeyboardButton("Set Language", callback_data="lang_menu"),
+            ],
+            [
+                InlineKeyboardButton("Longform", callback_data="longform_info"),
+            ],
         ]
-    ]
-    return InlineKeyboardMarkup(keyboard)
+    )
 
 
 async def set_lang(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -285,6 +307,16 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(f"user: {t}")
     else:
         convo.add_entry(update.message.text, Speaker.user)
+
+    if (
+        update.message.reply_to_message
+        and update.message.reply_to_message.text == longform_info_text
+    ):
+        from longform import generate_longform
+
+        await generate_longform(convo, user, context, update)
+        return
+
     await typing()
     think(convo)
     await update.message.reply_text(f"assistant: {convo.last_entry()}")
@@ -314,6 +346,10 @@ def main() -> None:
     application.add_handler(CallbackQueryHandler(intro, pattern="intro"))
     application.add_handler(CallbackQueryHandler(lang_menu, pattern="lang_menu"))
     application.add_handler(CallbackQueryHandler(set_lang, pattern="lang: (.*)"))
+    application.add_handler(
+        CallbackQueryHandler(longform_info, pattern="longform_info")
+    )
+    application.add_handler(CallbackQueryHandler(longform, pattern="longform"))
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))
     application.add_handler(

@@ -1,0 +1,1 @@
+longform_info_text = "This functionality allows you to generate longform content. Select a topic; imagine it is the title of a book, novel or podcast.\n\nTo continue, simply reply to this message with the title."
