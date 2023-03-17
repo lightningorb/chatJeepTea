@@ -2,9 +2,15 @@ import os
 import json
 
 
+# Todo this token math is really not great
+model_max_tokens = 4097
+response_max_tokens = 1000
+prompt_max_tokens = model_max_tokens - response_max_tokens
+
+
 def load_config(user_id):
     if not os.path.exists(f"config_{user_id}.json"):
-        save_config(user_id, {'language': 'en-US'})
+        save_config(user_id, {"language": "en-US"})
     with open(f"config_{user_id}.json", "r") as f:
         return json.load(f)
 

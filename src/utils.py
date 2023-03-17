@@ -3,16 +3,12 @@ import os
 
 import openai
 import tiktoken
+from conf import prompt_max_tokens, response_max_tokens
 
 import keys
 
 keys.set_up_keys()
 enc = tiktoken.get_encoding("gpt2")
-
-# Todo this token math is really not great
-model_max_tokens = 4097
-response_max_tokens = 1000
-prompt_max_tokens = model_max_tokens - response_max_tokens
 
 
 class Speaker:
@@ -91,6 +87,8 @@ def think(convo):
     prompt = convo.as_prompt()
     print("=========")
     print(prompt)
+    print("=========")
+    print(f"Num tokens according to us: {convo.num_tokens}")
     print("=========")
 
     while True:
