@@ -28,7 +28,7 @@ async def generate_longform(convo, user, context, update):
     convo.add_entry(prompt, Speaker.user)
     think(convo)
     response = convo.last_entry()
-    await update.message.reply_text(f"assistant: {convo.last_entry()}")
+    await update.message.reply_text(f"assistant: {await convo.last_entry()}")
     prompts = generate_prompts(json.loads(response))
     convo.delete_cache()
     for p in prompts:

@@ -1,5 +1,6 @@
 import os
 import tempfile
+import asyncio
 
 import conf
 import requests
@@ -26,6 +27,12 @@ keys.set_up_keys()
 convos = {}
 
 
+async def run_ffmpeg(file_name: str, temp_file_name: str) -> None:
+    cmd = f"ffmpeg -i {file_name} -vn -ar 44100 -ac 2 -ab 192k -f mp3 {temp_file_name}"
+    process = await asyncio.create_subprocess_shell(cmd)
+    await process.communicate()
+
+
 async def intro(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     async def typing():
         await context.bot.send_chat_action(
@@ -42,7 +49,7 @@ async def intro(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     await typing()
 
-    fn = speak(
+    fn = await speak(
         msg,
         use_google=True,
         save_only=True,
@@ -299,14 +306,12 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         temp_file.close()
         with open(file_name, "wb") as f:
             f.write(response.content)
-        os.system(
-            f"ffmpeg -i {file_name} -vn -ar 44100 -ac 2 -ab 192k -f mp3 {temp_file_name}"
-        )
-        t = whisper(temp_file_name)
-        convo.add_entry(t, Speaker.user)
+        await run_ffmpeg(file_name, temp_file_name)
+        t = await whisper(temp_file_name)
+        await convo.add_entry(t, Speaker.user)
         await update.message.reply_text(f"user: {t}")
     else:
-        convo.add_entry(update.message.text, Speaker.user)
+        await convo.add_entry(update.message.text, Speaker.user)
 
     if (
         update.message.reply_to_message
@@ -318,11 +323,11 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         return
 
     await typing()
-    think(convo)
-    await update.message.reply_text(f"assistant: {convo.last_entry()}")
+    await think(convo)
+    await update.message.reply_text(f"assistant: {await convo.last_entry()}")
     await typing()
-    fn = speak(
-        text=convo.last_entry(), user_id=user.id, use_google=True, save_only=True
+    fn = await speak(
+        text=await convo.last_entry(), user_id=user.id, use_google=True, save_only=True
     )
     await context.bot.send_voice(chat_id=update.effective_chat.id, voice=fn)
 

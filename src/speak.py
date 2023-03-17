@@ -5,9 +5,9 @@ import conf
 from google.cloud import texttospeech
 
 
-def speak(text, user_id, use_google=False, save_only=False):
+async def speak(text, user_id, use_google=False, save_only=False):
     print(f"Synthesizing into text: {text}")
-    lang = conf.get_language(user_id)
+    lang = await conf.get_language(user_id)
     print("=" * 100)
     print(lang)
     print("=" * 100)
