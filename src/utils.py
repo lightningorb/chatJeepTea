@@ -100,7 +100,7 @@ def think(convo):
             max_tokens=response_max_tokens,
             n=1,
             stop=None,
-            temperature=1,
+            temperature=0.7,
         )
         print("response:")
         print(response)
