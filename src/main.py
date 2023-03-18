@@ -114,8 +114,9 @@ async def write_file(file_name: str, content: bytes) -> None:
 async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
 
-    if not check_is_authorized(user.id):
+    if not await check_is_authorized(str(user.id)):
         await update.message.reply_text(f"You're not authorized to use this app")
+        return
 
     voice = update.message.voice
 

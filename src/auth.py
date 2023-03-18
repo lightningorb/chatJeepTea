@@ -1,5 +1,6 @@
 import json
 import asyncio
+import aiofiles
 
 
 async def load_auth_data(file_path):
@@ -12,8 +13,7 @@ async def check_is_authorized(user_id):
     file_path = "src/auth.json"
     try:
         auth_data = await load_auth_data(file_path)
-        authorized_users = auth_data.get("authorized_users", [])
-        return user_id in authorized_users
+        return user_id in auth_data
     except Exception as e:
         print(f"Error while checking authorization: {e}")
         return False
