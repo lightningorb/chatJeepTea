@@ -33,4 +33,4 @@ We welcome contributions to ChatJeepTea! To get started, simply fork this reposi
 
 ## License
 
-ChatJeepTea is currently closed source and not available under an open source license.
+GPL 3.
