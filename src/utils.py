@@ -1,6 +1,7 @@
 import json
 import os
 
+import asyncio
 import aiohttp
 import aiofiles
 import tiktoken
@@ -33,15 +34,26 @@ class Entry:
 
 
 class Conversation:
-    def __init__(self, convo_id, load_cache=True):
+    def __init__(self, convo_id):
         self.convo_id = convo_id
         self.context = []
-        # if load_cache:
-        #     if os.path.exists(f"/tmp/conversation_{convo_id}.json"):
-        #         with open(f"/tmp/conversation_{convo_id}.json", "r") as f:
-        #             self.context = [
-        #                 Entry(x["content"], x["role"]) for x in json.loads(f.read())
-        #             ]
+
+    async def load_cache(self):
+        if os.path.exists(f"/tmp/conversation_{self.convo_id}.json"):
+            async with aiofiles.open(
+                f"/tmp/conversation_{self.convo_id}.json", "r"
+            ) as f:
+                content = await f.read()
+                self.context = [
+                    Entry(x["content"], x["role"]) for x in json.loads(content)
+                ]
+
+    @classmethod
+    async def create(cls, convo_id, load_cache=True):
+        convo = cls(convo_id)
+        if load_cache:
+            await convo.load_cache()
+        return convo
 
     async def replace_last_entry_with_text(self, entry):
         self.context[-1] = entry
@@ -52,9 +64,10 @@ class Conversation:
             os.unlink(f"/tmp/conversation_{self.convo_id}.json")
 
     async def save(self):
-        pass
-        # async with aiofiles.open(f"/tmp/conversation_{self.convo_id}.json", "w") as w:
-        #     await w.write(await json.dumps(self.as_prompt(), indent=4))
+        async with aiofiles.open(f"/tmp/conversation_{self.convo_id}.json", "w") as w:
+            p = await self.as_prompt()
+            s = json.dumps(p, indent=4)
+            await w.write(s)
 
     async def add_entry(self, text, role):
         self.context.append(Entry(text, role))

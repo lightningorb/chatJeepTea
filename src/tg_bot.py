@@ -1,9 +1,12 @@
+import aiofiles
 import os
 import tempfile
 import asyncio
+import aiohttp
 
 import conf
 import requests
+from longform import generate_longform
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram import __version__ as TG_VER, Update
 from telegram.constants import ChatAction
@@ -27,6 +30,13 @@ keys.set_up_keys()
 convos = {}
 
 
+async def download_file(file_path: str) -> bytes:
+    async with aiohttp.ClientSession() as session:
+        async with session.get(file_path) as response:
+            content = await response.read()
+    return content
+
+
 async def run_ffmpeg(file_name: str, temp_file_name: str) -> None:
     cmd = f"ffmpeg -i {file_name} -vn -ar 44100 -ac 2 -ab 192k -f mp3 {temp_file_name}"
     process = await asyncio.create_subprocess_shell(cmd)
@@ -34,12 +44,9 @@ async def run_ffmpeg(file_name: str, temp_file_name: str) -> None:
 
 
 async def intro(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    async def typing():
-        await context.bot.send_chat_action(
-            chat_id=update.effective_chat.id, action=ChatAction.TYPING
-        )
-
-    await typing()
+    await context.bot.send_chat_action(
+        chat_id=update.effective_chat.id, action=ChatAction.TYPING
+    )
 
     msg = "Hello and welcome to Chat Jeep Tea. To speak to me, record and send a voice message by doing a long press on the microphone icon at the bottom right of telegram. I will respond to your message. To bring up the help menu at any time, type /help. Please bear in mind I keep a certain (somewhat small) amount of the conversation history as context. This helps us have a more natural conversation. Go ahead, ask me anything."
 
@@ -47,13 +54,11 @@ async def intro(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         chat_id=update.effective_chat.id, text=f"assistant: {msg}"
     )
 
-    await typing()
-
-    fn = await speak(
-        msg,
-        use_google=True,
-        save_only=True,
+    await context.bot.send_chat_action(
+        chat_id=update.effective_chat.id, action=ChatAction.TYPING
     )
+
+    fn = await speak(msg)
     await context.bot.send_voice(chat_id=update.effective_chat.id, voice=fn)
 
 
@@ -281,31 +286,31 @@ async def lang_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
 
 
+async def write_file(file_name: str, content: bytes) -> None:
+    async with aiofiles.open(file_name, "wb") as f:
+        await f.write(content)
+
+
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     voice = update.message.voice
 
-    async def typing():
-        await context.bot.send_chat_action(
-            chat_id=update.effective_chat.id, action=ChatAction.TYPING
-        )
-
-    await typing()
+    await context.bot.send_chat_action(
+        chat_id=update.effective_chat.id, action=ChatAction.TYPING
+    )
     if user.id not in convos:
-        convos[user.id] = Conversation(user.id)
+        convos[user.id] = await Conversation.create(user.id)
 
     convo = convos[user.id]
 
     if voice:
         file_name = f"/tmp/{voice.file_id}.ogg"
-        file_info = await context.bot.get_file(voice.file_id)
-        file_path = file_info.file_path
-        response = requests.get(file_path)
+        file_path = (await context.bot.get_file(voice.file_id)).file_path
+        response = await download_file(file_path)
         temp_file = tempfile.NamedTemporaryFile(delete=False)
         temp_file_name = f"{temp_file.name}.mp3"
         temp_file.close()
-        with open(file_name, "wb") as f:
-            f.write(response.content)
+        await write_file(file_name, response.content)
         await run_ffmpeg(file_name, temp_file_name)
         t = await whisper(temp_file_name)
         await convo.add_entry(t, Speaker.user)
@@ -317,18 +322,18 @@ async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         update.message.reply_to_message
         and update.message.reply_to_message.text == longform_info_text
     ):
-        from longform import generate_longform
-
         await generate_longform(convo, user, context, update)
         return
 
-    await typing()
+    await context.bot.send_chat_action(
+        chat_id=update.effective_chat.id, action=ChatAction.TYPING
+    )
     await think(convo)
     await update.message.reply_text(f"assistant: {await convo.last_entry()}")
-    await typing()
-    fn = await speak(
-        text=await convo.last_entry(), user_id=user.id, use_google=True, save_only=True
+    await context.bot.send_chat_action(
+        chat_id=update.effective_chat.id, action=ChatAction.TYPING
     )
+    fn = await speak(text=await convo.last_entry(), user_id=user.id)
     await context.bot.send_voice(chat_id=update.effective_chat.id, voice=fn)
 
 
