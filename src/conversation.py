@@ -66,10 +66,10 @@ class Conversation:
 
     async def delete_cache(self):
         self.context = []
+        file = f"/tmp/conversation_{self.convo_id}.json"
+        print(file)
         if os.path.exists(f"/tmp/conversation_{self.convo_id}.json"):
-            await asyncio.to_thread(
-                os.unlink, f"/tmp/conversation_{self.convo_id}.json"
-            )
+            os.unlink(f"/tmp/conversation_{self.convo_id}.json")
 
     async def save(self):
         async with aiofiles.open(f"/tmp/conversation_{self.convo_id}.json", "w") as w:

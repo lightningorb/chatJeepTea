@@ -66,9 +66,10 @@ async def intro(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def new_conversation(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
+    if user.id not in convos:
+        convos[user.id] = await Conversation.create(user.id)
     convo = convos.get(user.id)
-    if convo:
-        convo.delete_cache()
+    await convo.delete_cache()
     await context.bot.send_message(
         chat_id=update.effective_chat.id, text="Conversation cleared"
     )
