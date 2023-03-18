@@ -10,7 +10,7 @@ To use ChatJeepTea, you will need to set the following environment variables:
 
 Please also save your google cloud credentials in `src/key.json`.
 
-Since these APIs cost money, add the user ids in a list in `src/auth.json`.
+`src/auth.json` gets auto-populated with the first telegram user id that uses the bot. That's because these are paying APIs, and telegram bots are public. If you want to grant other users the ability to use the bot, then add their telegram user ids to this file too.
 
 ### Installation
 
