@@ -19,7 +19,7 @@ Since these APIs cost money, add the user ids in a list in `src/auth.json`.
 1. `. .venv/bin/activate`
 1. Install dependencies with `pip3 install -r src/requirements.txt`
 1. Set environment variables (or even better, use direnv)
-1. Run `python3 tg_bot.py`
+1. Run `python3 main.py`
 
 ### Usage
 

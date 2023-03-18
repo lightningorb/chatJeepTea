@@ -1,3 +1,4 @@
+langdetect
 python-telegram-bot
 google-cloud-texttospeech
 pyaudio
