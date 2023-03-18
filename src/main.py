@@ -24,6 +24,7 @@ from speak import speak
 from conversation import Speaker, Conversation
 from think import think
 from whisper import whisper
+from auth import check_is_authorized
 
 keys.set_up_keys()
 
@@ -57,8 +58,9 @@ async def intro(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_chat_action(
         chat_id=update.effective_chat.id, action=ChatAction.TYPING
     )
+    user = update.effective_user
 
-    fn = await speak(msg)
+    fn = await speak(msg, user.id)
     await context.bot.send_voice(chat_id=update.effective_chat.id, voice=fn)
 
 
@@ -111,6 +113,10 @@ async def write_file(file_name: str, content: bytes) -> None:
 
 async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
+
+    if not check_is_authorized(user.id):
+        await update.message.reply_text(f"You're not authorized to use this app")
+
     voice = update.message.voice
 
     await context.bot.send_chat_action(

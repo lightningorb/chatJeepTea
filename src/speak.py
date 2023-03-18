@@ -1,4 +1,3 @@
-import os
 import tempfile
 import asyncio
 import logging

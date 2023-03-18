@@ -7,7 +7,10 @@ ChatJeepTea is a Telegram chat bot that uses OpenAI's API, Whisper, and Google t
 To use ChatJeepTea, you will need to set the following environment variables:
 - `TOKEN` for your Telegram bot token
 - `OPENAI` for your OpenAI API key
-- `GOOGLE_APPLICATION_CREDENTIALS` for your Google Cloud Platform service account keyfile
+
+Please also save your google cloud credentials in `src/key.json`.
+
+Since these APIs cost money, add the user ids in a list in `src/auth.json`.
 
 ### Installation
 

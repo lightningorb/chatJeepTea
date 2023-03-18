@@ -1,6 +1,5 @@
 python-telegram-bot
 google-cloud-texttospeech
-openai
 pyaudio
 tiktoken
 aiohttp

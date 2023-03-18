@@ -1,6 +1,5 @@
 import os
 import aiohttp
-import json
 
 API_KEY = os.environ["OPENAI"]
 

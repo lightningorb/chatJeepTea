@@ -1,7 +1,11 @@
 from speak import speak
-from conversation import Speaker, Conversation, Entry
+from conversation import Speaker
 from think import think
 import json
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 data_format = json.dumps(
     {
@@ -29,7 +33,7 @@ async def generate_longform(convo, user, context, update):
     convo.add_entry(prompt, Speaker.user)
     await think(convo)
     response = convo.last_entry()
-    print(response)
+    logger.info(response)
     await update.message.reply_text(f"assistant: {response}")
     prompts = generate_prompts(json.loads(response))
     await convo.delete_cache()
@@ -38,12 +42,12 @@ async def generate_longform(convo, user, context, update):
         try:
             await think(convo)
         except:
-            print("error thinking")
+            logger.info("error thinking")
         fn = await speak(text=convo.last_entry(), user_id=user.id)
         try:
             await context.bot.send_voice(chat_id=update.effective_chat.id, voice=fn)
         except:
-            print("error sending voice")
+            logger.info("error sending voice")
 
 
 def generate_prompts(data):
