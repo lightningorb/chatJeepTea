@@ -9,7 +9,7 @@ import keys
 from conf import prompt_max_tokens
 
 keys.set_up_keys()
-enc = tiktoken.get_encoding("gpt2")
+enc = tiktoken.get_encoding("cl100k_base")
 
 
 class Speaker:
@@ -29,7 +29,7 @@ class Entry:
 
     @property
     def num_tokens(self):
-        return len(self.tokens)
+        return len(enc.encode(self.role)) + len(self.tokens)
 
 
 class Conversation:
@@ -92,5 +92,7 @@ class Conversation:
             del self.context[first_index]
 
     async def remove_in_excess(self, count):
-        while self.num_tokens > count:
+        # cl100k_base seems to be off by 10 or 20% so
+        # dirty hack to adjust token count
+        while self.num_tokens * 1.2 > count:
             self.remove_first_entry()
