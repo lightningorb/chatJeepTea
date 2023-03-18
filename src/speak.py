@@ -9,9 +9,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-async def speak(text, user_id):
+async def speak(text, user_id, lang="en-US"):
     logger.info(f"Synthesizing into text: {text}")
-    lang = await conf.get_language(user_id)
     logger.info(f"Language: {lang}")
 
     def synthesize_speech():

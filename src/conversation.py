@@ -4,9 +4,11 @@ import os
 import asyncio
 import aiofiles
 import tiktoken
+from langdetect import detect
 
 import keys
 from conf import prompt_max_tokens
+from intl import LangMap
 
 keys.set_up_keys()
 enc = tiktoken.get_encoding("cl100k_base")
@@ -22,6 +24,14 @@ class Entry:
     def __init__(self, text, role=Speaker.user):
         self.tokens = enc.encode(text)[:prompt_max_tokens]
         self.role = role
+
+    @property
+    def language(self):
+        try:
+            return LangMap.get(detect(self.text), "en-US")
+        except Exception as e:
+            print(f"Error detecting language: {e}")
+            return "en-US"
 
     @property
     def text(self):
@@ -54,9 +64,6 @@ class Conversation:
             await convo.load_cache()
         return convo
 
-    def replace_last_entry_with_text(self, entry):
-        self.context[-1] = entry
-
     async def delete_cache(self):
         self.context = []
         if os.path.exists(f"/tmp/conversation_{self.convo_id}.json"):
@@ -80,7 +87,7 @@ class Conversation:
         return c
 
     def last_entry(self):
-        return self.context[-1].text
+        return self.context[-1]
 
     @property
     def num_tokens(self):

@@ -27,12 +27,12 @@ data_format = json.dumps(
 
 
 async def generate_longform(convo, user, context, update):
-    title = convo.last_entry()
+    title = convo.last_entry().text
     await convo.delete_cache()
     prompt = f"Write the outline as a json document for a book entitled: {title}. Please only respond with the json and nothing else. The json must be in the following format: \n\n{data_format}"
     convo.add_entry(prompt, Speaker.user)
     await think(convo)
-    response = convo.last_entry()
+    response = convo.last_entry().text
     logger.info(response)
     await update.message.reply_text(f"assistant: {response}")
     prompts = generate_prompts(json.loads(response))
@@ -43,7 +43,11 @@ async def generate_longform(convo, user, context, update):
             await think(convo)
         except:
             logger.info("error thinking")
-        fn = await speak(text=convo.last_entry(), user_id=user.id)
+        fn = await speak(
+            text=convo.last_entry().text,
+            user_id=user.id,
+            lang=convo.last_entry().language,
+        )
         try:
             await context.bot.send_voice(chat_id=update.effective_chat.id, voice=fn)
         except:

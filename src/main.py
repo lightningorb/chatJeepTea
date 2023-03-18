@@ -19,7 +19,7 @@ import conf
 import keys
 from intl import longform_info_text
 from longform import generate_longform
-from menus import lang_menu, main_menu_keyboard
+from menus import main_menu_keyboard
 from speak import speak
 from conversation import Speaker, Conversation
 from think import think
@@ -60,7 +60,7 @@ async def intro(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
     user = update.effective_user
 
-    fn = await speak(msg, user.id)
+    fn = await speak(msg, user.id, "en-US")
     await context.bot.send_voice(chat_id=update.effective_chat.id, voice=fn)
 
 
@@ -94,15 +94,6 @@ async def longform(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
         text="Please provide the title of the book / podcast / longform article you want to generate",
-    )
-
-
-async def set_lang(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user = update.effective_user
-    match = context.match.string[len("lang: ") :]
-    await conf.set_language(user.id, match)
-    await context.bot.send_message(
-        chat_id=update.effective_chat.id, text=f"Language: {match} set."
     )
 
 
@@ -154,11 +145,13 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         chat_id=update.effective_chat.id, action=ChatAction.TYPING
     )
     await think(convo)
-    await update.message.reply_text(f"assistant: {convo.last_entry()}")
+    await update.message.reply_text(f"assistant: {convo.last_entry().text}")
     await context.bot.send_chat_action(
         chat_id=update.effective_chat.id, action=ChatAction.TYPING
     )
-    fn = await speak(text=convo.last_entry(), user_id=user.id)
+    fn = await speak(
+        text=convo.last_entry().text, user_id=user.id, lang=convo.last_entry().language
+    )
     await context.bot.send_voice(chat_id=update.effective_chat.id, voice=fn)
 
 
@@ -179,8 +172,6 @@ def main() -> None:
         CallbackQueryHandler(new_conversation, pattern="new_conversation")
     )
     application.add_handler(CallbackQueryHandler(intro, pattern="intro"))
-    application.add_handler(CallbackQueryHandler(lang_menu, pattern="lang_menu"))
-    application.add_handler(CallbackQueryHandler(set_lang, pattern="lang: (.*)"))
     application.add_handler(
         CallbackQueryHandler(longform_info, pattern="longform_info")
     )
