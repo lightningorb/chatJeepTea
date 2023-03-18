@@ -135,7 +135,7 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         temp_file = tempfile.NamedTemporaryFile(delete=False)
         temp_file_name = f"{temp_file.name}.mp3"
         temp_file.close()
-        await write_file(file_name, response.content)
+        await write_file(file_name, response)
         await run_ffmpeg(file_name, temp_file_name)
         t = await whisper(temp_file_name)
         convo.add_entry(t, Speaker.user)
