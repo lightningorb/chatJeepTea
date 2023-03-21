@@ -3,6 +3,7 @@ from conversation import Speaker
 from think import think
 import json
 import logging
+from utils import reply_text
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ async def generate_longform(convo, user, context, update):
     await think(convo)
     response = convo.last_entry().text
     logger.info(response)
-    await update.message.reply_text(f"assistant: {response}")
+    await reply_text(update.message, f"assistant: {response}")
     prompts = generate_prompts(json.loads(response))
     await convo.delete_cache()
     for p in prompts:

@@ -25,6 +25,7 @@ from conversation import Speaker, Conversation
 from think import think
 from whisper import whisper
 from auth import check_is_authorized
+from utils import reply_text
 
 keys.set_up_keys()
 
@@ -131,7 +132,7 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await run_ffmpeg(file_name, temp_file_name)
         t = await whisper(temp_file_name)
         convo.add_entry(t, Speaker.user)
-        await update.message.reply_text(f"user: {t}")
+        await reply_text(update.message, f"user: {t}")
     else:
         convo.add_entry(update.message.text, Speaker.user)
 
@@ -146,7 +147,7 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         chat_id=update.effective_chat.id, action=ChatAction.TYPING
     )
     await think(convo)
-    await update.message.reply_text(f"assistant: {convo.last_entry().text}")
+    await reply_text(update.message, f"assistant: {convo.last_entry().text}")
     await context.bot.send_chat_action(
         chat_id=update.effective_chat.id, action=ChatAction.TYPING
     )
