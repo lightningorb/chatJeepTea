@@ -108,7 +108,7 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
 
     if not await check_is_authorized(str(user.id)):
-        await update.message.reply_text(f"You're not authorized to use this app")
+        await update.message.reply_text(f"You're not authorized to use this app. Please ask the admin to authorize: {user.id}")
         return
 
     voice = update.message.voice
