@@ -1,4 +1,37 @@
-longform_info_text = "This functionality allows you to generate longform content. Select a topic; imagine it is the title of a book, novel or podcast.\n\nTo continue, simply reply to this message with the title."
+longform_info_text = """\
+This functionality allows you to generate longform content. \
+Select a topic; imagine it is the title of a book, novel or podcast.
+
+To continue, simply reply to this message with the title."""
+
+system_info_text = """This functionality enables you to set the system prompt.
+
+Think of the system prompt as role playing: \
+you are telling the GPT exactly how to behave, \
+what you expect from it, and how to respond to all your inputs. \
+The more precise you are, the better.
+
+To set the system prompt please REPLY to this message."""
+
+into_text = """Hello and welcome to Chat Jeep Tea. \
+
+To speak to me, record and send a voice message by doing a long press \
+on the microphone icon at the bottom right of telegram. \
+
+I will respond to your message. To bring up the help menu at any time, \
+type /help.
+
+Please bear in mind I keep a certain (somewhat small) amount \
+of the conversation history as context. This helps us have a more natural \
+conversation. To clear this conversation history, please click \
+'new conversation'. 
+
+The 'longform' button can be used to generate longform content.
+
+The 'system' button is used to set the system prompt.
+
+Go ahead, ask me anything.
+"""
 
 
 LangMap = {

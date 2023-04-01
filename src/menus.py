@@ -13,6 +13,7 @@ def main_menu_keyboard():
             ],
             [
                 InlineKeyboardButton("Longform", callback_data="longform_info"),
+                InlineKeyboardButton("System", callback_data="system_info"),
             ],
         ]
     )

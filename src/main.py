@@ -17,7 +17,7 @@ from telegram.ext import CallbackQueryHandler
 
 import conf
 import keys
-from intl import longform_info_text
+from intl import longform_info_text, into_text, system_info_text
 from longform import generate_longform
 from menus import main_menu_keyboard
 from speak import speak
@@ -50,10 +50,8 @@ async def intro(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         chat_id=update.effective_chat.id, action=ChatAction.TYPING
     )
 
-    msg = "Hello and welcome to Chat Jeep Tea. To speak to me, record and send a voice message by doing a long press on the microphone icon at the bottom right of telegram. I will respond to your message. To bring up the help menu at any time, type /help. Please bear in mind I keep a certain (somewhat small) amount of the conversation history as context. This helps us have a more natural conversation. Go ahead, ask me anything."
-
     await context.bot.send_message(
-        chat_id=update.effective_chat.id, text=f"assistant: {msg}"
+        chat_id=update.effective_chat.id, text=f"assistant: {into_text}"
     )
 
     await context.bot.send_chat_action(
@@ -61,7 +59,7 @@ async def intro(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
     user = update.effective_user
 
-    fn = await speak(msg, user.id, "en-US")
+    fn = await speak(into_text, user.id, "en-US")
     await context.bot.send_voice(chat_id=update.effective_chat.id, voice=fn)
 
 
@@ -92,6 +90,12 @@ async def longform_info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     )
 
 
+async def system_info(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id, text=system_info_text
+    )
+
+
 async def longform(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -108,7 +112,9 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
 
     if not await check_is_authorized(str(user.id)):
-        await update.message.reply_text(f"You're not authorized to use this app. Please ask the admin to authorize: {user.id}")
+        await update.message.reply_text(
+            f"You're not authorized to use this app. Please ask the admin to authorize: {user.id}"
+        )
         return
 
     voice = update.message.voice
@@ -141,6 +147,13 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         and update.message.reply_to_message.text == longform_info_text
     ):
         await generate_longform(convo, user, context, update)
+        return
+    elif (
+        update.message.reply_to_message
+        and update.message.reply_to_message.text == system_info_text
+    ):
+        convo.set_system_prompt(convo.last_entry().text)
+        await reply_text(update.message, f"assistant: system prompt has been set")
         return
 
     await context.bot.send_chat_action(
@@ -177,6 +190,7 @@ def main() -> None:
     application.add_handler(
         CallbackQueryHandler(longform_info, pattern="longform_info")
     )
+    application.add_handler(CallbackQueryHandler(system_info, pattern="system_info"))
     application.add_handler(CallbackQueryHandler(longform, pattern="longform"))
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("help", help_command))

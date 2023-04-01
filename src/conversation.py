@@ -47,11 +47,13 @@ class Conversation:
         self.convo_id = convo_id
         self.context = []
 
+    @property
+    def cache_file(self):
+        return f"/tmp/conversation_{self.convo_id}.json"
+
     async def load_cache(self):
-        if os.path.exists(f"/tmp/conversation_{self.convo_id}.json"):
-            async with aiofiles.open(
-                f"/tmp/conversation_{self.convo_id}.json", "r"
-            ) as f:
+        if os.path.exists(self.cache_file):
+            async with aiofiles.open(self.cache_file, "r") as f:
                 content = await f.read()
                 self.context = [
                     Entry(x["content"], x["role"]) for x in json.loads(content)
@@ -66,13 +68,11 @@ class Conversation:
 
     async def delete_cache(self):
         self.context = []
-        file = f"/tmp/conversation_{self.convo_id}.json"
-        print(file)
-        if os.path.exists(f"/tmp/conversation_{self.convo_id}.json"):
-            os.unlink(f"/tmp/conversation_{self.convo_id}.json")
+        if os.path.exists(self.cache_file):
+            os.unlink(self.cache_file)
 
     async def save(self):
-        async with aiofiles.open(f"/tmp/conversation_{self.convo_id}.json", "w") as w:
+        async with aiofiles.open(self.cache_file, "w") as w:
             p = self.as_prompt()
             s = json.dumps(p, indent=4)
             await w.write(s)
@@ -80,11 +80,19 @@ class Conversation:
     def add_entry(self, text, role):
         self.context.append(Entry(text, role))
 
+    def set_system_prompt(self, text):
+        prompt = Entry(text, Speaker.system)
+        if self.context:
+            if self.context[0].role == "system":
+                self.context[0] = prompt
+                return
+        self.context.insert(0, prompt)
+
     def as_prompt(self):
-        c = []
-        for i, e in enumerate(self.context):
-            c.append(dict(role=e.role, content=e.text.strip()))
-        return c
+        return [
+            dict(role=e.role, content=e.text.strip())
+            for i, e in enumerate(self.context)
+        ]
 
     def last_entry(self):
         return self.context[-1]
@@ -103,3 +111,4 @@ class Conversation:
         # dirty hack to adjust token count
         while self.num_tokens * 1.2 > count:
             self.remove_first_entry()
+            await asyncio.sleep(0.1)
