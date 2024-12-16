@@ -27,8 +27,6 @@ from whisper import whisper
 from auth import check_is_authorized
 from utils import reply_text
 
-keys.set_up_keys()
-
 convos = {}
 
 
@@ -182,7 +180,8 @@ def main() -> None:
         raise RuntimeError(
             f"This example is not compatible with your current PTB version {TG_VER}."
         )
-    application = Application.builder().token(os.environ["TOKEN"]).build()
+    application = Application.builder().token(os.environ["TOKEN"]).pool_timeout(120).build()
+
     application.add_handler(
         CallbackQueryHandler(new_conversation, pattern="new_conversation")
     )

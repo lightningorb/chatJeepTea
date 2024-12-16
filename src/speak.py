@@ -1,38 +1,57 @@
-import tempfile
+import aiohttp
 import asyncio
 import logging
 import aiofiles
-from google.cloud import texttospeech
-import conf
+import tempfile
+import keys
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
-async def speak(text, user_id, lang="en-US"):
-    logger.info(f"Synthesizing into text: {text}")
+async def speak(text, lang="en-US", model="tts-1", user_id=None):
+    logger.info(f"Synthesizing text: {text}")
     logger.info(f"Language: {lang}")
+    logger.info(f"Model: {model}")
 
-    def synthesize_speech():
-        client = texttospeech.TextToSpeechClient()
-        synthesis_input = texttospeech.SynthesisInput(text=text)
-        voice = texttospeech.VoiceSelectionParams(language_code=lang)
-        audio_config = texttospeech.AudioConfig(
-            audio_encoding=texttospeech.AudioEncoding.MP3
-        )
-        return client.synthesize_speech(
-            input=synthesis_input, voice=voice, audio_config=audio_config
-        )
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            "https://api.openai.com/v1/audio/speech",
+            headers={
+                "Authorization": f"Bearer {keys.API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "input": text,
+                "model": model,
+                "voice": 'alloy',
+                "format": "mp3"
+            },
+        ) as resp:
+            logger.info(f"HTTP Status: {resp.status}")
+            if resp.status == 200:
+                audio_content = await resp.read()
 
-    loop = asyncio.get_event_loop()
-    response = await loop.run_in_executor(None, synthesize_speech)
+                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
+                temp_file_name = temp_file.name
+                temp_file.close()
 
-    temp_file = tempfile.NamedTemporaryFile(delete=False)
-    temp_file_name = f"{temp_file.name}.mp3"
-    temp_file.close()
+                async with aiofiles.open(temp_file_name, "wb") as out_file:
+                    await out_file.write(audio_content)
+                    logger.info(f'Audio content written to file "{temp_file_name}"')
 
-    async with aiofiles.open(temp_file_name, "wb") as out:
-        await out.write(response.audio_content)
-        logger.info(f'Audio content written to file "{temp_file_name}"')
+                return temp_file_name
+            else:
+                error = await resp.json()
+                logger.error(f"Error synthesizing speech: {error}")
+                raise Exception(f"API Error: {error}")
 
-    return temp_file_name
+# Example usage
+async def main():
+    try:
+        audio_file = await speak("Hello! How can I assist you today?")
+        logger.info(f"Audio file saved at: {audio_file}")
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+
+if __name__ == "__main__":
+    asyncio.run(main())

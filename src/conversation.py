@@ -10,7 +10,6 @@ import keys
 from conf import prompt_max_tokens
 from intl import LangMap
 
-keys.set_up_keys()
 enc = tiktoken.get_encoding("cl100k_base")
 
 
