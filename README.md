@@ -1,14 +1,12 @@
 # ChatJeepTea
 
-ChatJeepTea is a Telegram chat bot that uses OpenAI's API, Whisper, and Google text-to-speech to enable voice-based conversations in near-realtime. It is written in Python.
+ChatJeepTea is a Telegram chat bot that uses OpenAI's API and Whisper to enable voice-based conversations in near-realtime. It is written in Python.
 
 ## Getting Started
 
 To use ChatJeepTea, you will need to set the following environment variables:
 - `TOKEN` for your Telegram bot token
 - `OPENAI` for your OpenAI API key
-
-Please also save your google cloud credentials in `src/key.json`.
 
 `src/auth.json` gets auto-populated with the first telegram user id that uses the bot. That's because these are paying APIs, and telegram bots are public. If you want to grant other users the ability to use the bot, then add their telegram user ids to this file too.
 
